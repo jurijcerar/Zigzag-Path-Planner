@@ -31,9 +31,33 @@ void clearData(void* cookie) {
     for (auto& s : {"_ab", "_bc", "_cd", "_da"})
         state->viewer->removeShape(s);
 
-    for (auto& id : state->trajectory_ids)
-        state->viewer->removeShape(id);
+    state->viewer->removeShape("trajectory");
 
     state->picked_points.clear();
     state->trajectory_ids.clear();
 }
+
+void visualizeTrajectory(PickingState& state, const std::vector<PathPoint>& trajectory)
+{
+    auto points = vtkSmartPointer<vtkPoints>::New();
+    auto lines = vtkSmartPointer<vtkCellArray>::New();
+
+    auto polyLine = vtkSmartPointer<vtkPolyLine>::New();
+    polyLine->GetPointIds()->SetNumberOfIds(trajectory.size());
+
+    for (size_t i = 0; i < trajectory.size(); ++i)
+    {
+        const auto& p = trajectory[i].position;
+        points->InsertNextPoint(p.x, p.y, p.z);
+        polyLine->GetPointIds()->SetId(i, i);
+    }
+
+    lines->InsertNextCell(polyLine);
+
+    auto polyData = vtkSmartPointer<vtkPolyData>::New();
+    polyData->SetPoints(points);
+    polyData->SetLines(lines);
+
+    state.viewer->addModelFromPolyData(polyData, "trajectory");
+}
+

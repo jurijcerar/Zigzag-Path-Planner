@@ -1,4 +1,5 @@
 #include "zigzag.h"
+#include "visualization.h"
 #include <pcl/features/normal_3d.h>
 
 std::vector<PathPoint> generateZigZagPath(void* cookie, float step_size) {
@@ -16,7 +17,7 @@ std::vector<PathPoint> generateZigZagPath(void* cookie, float step_size) {
         tree->setInputCloud(state->cloud);
     }
 
-    // Estimate normals if not done yet
+    // Estimate normals
     static pcl::PointCloud<pcl::Normal>::Ptr cloud_normals;
     if (!cloud_normals) {
         cloud_normals.reset(new pcl::PointCloud<pcl::Normal>);
@@ -29,7 +30,7 @@ std::vector<PathPoint> generateZigZagPath(void* cookie, float step_size) {
 
     // Order quadrilateral points counter-clockwise: A,B,C,D
     pcl::PointXYZ A_p,B_p,C_p,D_p;
-    orderRectanglePoints(state->picked_points,A_p,B_p,C_p,D_p); // reuse function
+    orderRectanglePoints(state->picked_points,A_p,B_p,C_p,D_p);
 
     Eigen::Vector3f A(A_p.x,A_p.y,A_p.z);
     Eigen::Vector3f B(B_p.x,B_p.y,B_p.z);
@@ -77,18 +78,12 @@ std::vector<PathPoint> generateZigZagPath(void* cookie, float step_size) {
 
             trajectory.push_back({p, normal});
 
-            if (trajectory.size()>1)
-            {
-                const auto& prev = trajectory[trajectory.size()-2];
-                std::string id = "traj_" + std::to_string(trajectory.size());
-                state->viewer->addLine(prev.position,p,0.8f,0.8f,0.8f,id);
-                state->viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH,2.0,id);
-                state->trajectory_ids.push_back(id);
-            }
         }
 
         forward = !forward; // zig-zag direction flips
     }
+
+    visualizeTrajectory(*state, trajectory);
 
     return trajectory;
 }
